@@ -15,7 +15,8 @@ This report makes use of data from a personal activity monitoring device. This d
 ### **2 Loading and Preprocessing the Data**
 #### **2.1 Preparation of Working Environment**
 THe first step is to set up the working environment for R used in this analysis. There are several additional libraries used that are not in the standard R installation.
-```{r}
+
+```r
 setwd("D:/R Document/Coursera/RepResearch/Project1")
 library(data.table)
 library(date)
@@ -25,7 +26,8 @@ library(dplyr)
 
 #### **2.2 Load the Data**
 The next step is to load the data for the study. The data file was originally in compressed form, and was downloaded and decompressed to the local drive as activity.csv.
-```{r}
+
+```r
 if (!file.exists("activity.csv")) {
     url="http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
     download.file(url, "activity.zip", quiet=T)
@@ -34,19 +36,45 @@ if (!file.exists("activity.csv")) {
     }
 df.activity <- fread("activity.csv", data.table=F)
 str(df.activity)
+```
+
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : chr  "2012-10-01" "2012-10-01" "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
+```r
 summary(df.activity)
+```
+
+```
+##      steps            date              interval     
+##  Min.   :  0.00   Length:17568       Min.   :   0.0  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8  
+##  Median :  0.00   Mode  :character   Median :1177.5  
+##  Mean   : 37.38                      Mean   :1177.5  
+##  3rd Qu.: 12.00                      3rd Qu.:1766.2  
+##  Max.   :806.00                      Max.   :2355.0  
+##  NA's   :2304
+```
+
+```r
 df.activity[,"date"] <- as.Date(df.activity[,"date"])
 rollUpSteps <- summarise(group_by(df.activity, date), steps=sum(steps))
 summary.rollUpSteps <- summary(rollUpSteps)
 ```
 
 ### **3 What is Mean Total Number of Steps Taken per Day?**
-```{r}
+
+```r
 totalSteps <- aggregate(steps ~ date, data = df.activity, sum, na.rm = TRUE)
 ```
 #### **3.1 Histogram of Total Number of Steps**
 
-```{r}
+
+```r
 totalStepPlot <- ggplot(totalSteps, aes(steps)) 
 totalStepPlot <- totalStepPlot + labs(title="Histogram of Daily Steps",
                         x="Total Number of Steps per Day",
@@ -55,42 +83,73 @@ totalStepPlot <- totalStepPlot + geom_histogram(binwidth=1952, colour='black', f
 totalStepPlot
 ```
 
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
+
 #### **3.2 The Mean and Median for Total Number of Steps per Day**
 
-```{r}
+
+```r
 mean_steps <- mean(totalSteps$steps)
 median_steps <- median(totalSteps$steps)
 mean_steps
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median_steps
+```
+
+```
+## [1] 10765
 ```
 The mean for total number of steps per day is 10766 steps
 
 The median for total number of steps per day is 10765 steps
 
 ### **4 What is the average daily activity pattern?**
-```{r}
+
+```r
 rollUpInterval <- summarise(group_by(df.activity, interval), msteps=mean(steps, na.rm=T))
 ```
 #### **4.1 Time Series Plot for the Average Daily Activity Pattern**
-```{r}
+
+```r
 TimeSeriesPlot <- ggplot(data=rollUpInterval, aes(interval, msteps)) + geom_line(colour="blue")
 TimeSeriesPlot <- TimeSeriesPlot + labs(title="Average Number of Steps by Intervals",x="Intervals",y="Number of Steps")
 TimeSeriesPlot
 ```
 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
+
 #### **4.2 Intervels Containing the Maximum Number of Steps**
-```{r}
+
+```r
 MaxSteps <- max(rollUpInterval[,'msteps'])
 MaxStepInterval <- rollUpInterval[rollUpInterval$msteps==MaxSteps, 'interval']
 MaxStepInterval
+```
+
+```
+## Source: local data frame [1 x 1]
+## 
+##   interval
+## 1      835
 ```
 So 835 intervals contain the maximum number of steps
 
 ### **5 Imputing Missing Values**
 #### **5.1 Total Number of Missing Values**
-```{r}
+
+```r
 MissingValues <- sum(!complete.cases(df.activity))
 MissingValues
+```
+
+```
+## [1] 2304
 ```
 The number of missing values is 2304
 
@@ -98,7 +157,8 @@ The number of missing values is 2304
 
 A strategy for filling in all of the missing values in the dataset is described below. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-```{r}
+
+```r
 steps_interval <- aggregate(steps ~ interval, data = df.activity, mean, na.rm = TRUE)
 ## This function returns the mean steps for a given interval
 MeanStepsPerInterval <- function(interval){
@@ -106,7 +166,8 @@ MeanStepsPerInterval <- function(interval){
     }
 ```
 Create a new dataset that is equal to the original dataset but with the missing data filled in.
-```{r}
+
+```r
 complete.activity <- df.activity
 ## Filling the missing values with the mean for that 5-minute interval
 flag = 0
@@ -120,7 +181,8 @@ ImputedMissingValues <- aggregate(steps ~ date, data = complete.activity, sum)
 ```
 
 #### **5.3 Histogram of Total Number of Steps**
-```{r}
+
+```r
 ImputingPlot <- ggplot(ImputedMissingValues, aes(x=steps)) 
 ImputingPlot <- ImputingPlot + labs(title="Histogram Using Imputed Data",
                         x="Total Steps per Day",
@@ -129,12 +191,26 @@ ImputingPlot <- ImputingPlot + geom_histogram(binwidth=1952, colour='black', fil
 ImputingPlot
 ```
 
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png) 
+
 #### **5.4 The Mean and Median for Total Number of Steps per Day using Imputing Data**
-```{r}
+
+```r
 ImputingMean <- mean(ImputedMissingValues$steps)
 ImputingMedian <- median(ImputedMissingValues$steps)
 ImputingMean
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 ImputingMedian
+```
+
+```
+## [1] 10766.19
 ```
 Mean for total number of steps taken per day is 10766
 
@@ -144,15 +220,19 @@ The mean value is the same, but the median value changed.
 
 ### **6 Are there differences in activity patterns between weekdays and weekends?**
 #### **6.1 Dataset with Weekday and Weekend Factors**
-```{r}
+
+```r
 complete.activity$day <- ifelse(as.POSIXlt(as.Date(complete.activity$date))$wday%%6 == 
                                     0, "weekend", "weekday")
 complete.activity$day <- factor(complete.activity$day, levels = c("weekday", "weekend"))
 ```
 #### **6.2 Panel Plot of Weekday VS Weekend Activity**
 A panel plot is made containing a time series plot of the 5-minute interval and the average number of steps taken, averaged across all weekday days or weekend days.
-```{r}
+
+```r
 steps.interval= aggregate(steps ~ interval + day, complete.activity, mean)
 library(lattice)
 xyplot(steps ~ interval | factor(day), cex=10,data = steps.interval, aspect = 1/2, type = "l")
 ```
+
+![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15-1.png) 
